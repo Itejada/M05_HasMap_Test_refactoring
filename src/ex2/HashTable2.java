@@ -1,13 +1,11 @@
-package ex1;
+package ex2;
 
 // Original source code: https://gist.github.com/amadamala/3cdd53cb5a6b1c1df540981ab0245479
 // Modified by Fernando Porrino Serrano for academic purposes.
 
-import ex2.HashEntry;
-
 import java.util.ArrayList;
 
-public class HashTable1 {
+public class HashTable2 {
     private int INITIAL_SIZE = 16;
     private int size = 0;
     private HashEntry[] entries = new HashEntry[INITIAL_SIZE];
@@ -21,18 +19,20 @@ public class HashTable1 {
     }
 
     public void put(String key, String value) {
-        int hash = getHash(key);
         final HashEntry hashEntry = new HashEntry(key, value);
-
-
-        if (entries[hash] == null) {
-            entries[hash] = hashEntry;
+        // int hash = getHash(key);
+        /** REFACCIÓ: (~ º◡º)~
+         * Inline */
+        HashEntry temp = entries[getHash(key)];
+        /** REFACCIÓ: ~(º◡º ~)
+         *  He echo refaccio a la variable enreies hash para que solo tenga que buscarlo una vez y pueda ser utilizada en toodo el codigo */
+        if (temp == null) {
+            entries[getHash(key)] = hashEntry;
             /** ERROR: ¯\_(ツ)_/¯
              * Sumo para controlar el size porque se rellena una posicion nula  */
             size += 1;
 
         } else {
-            HashEntry temp = entries[hash];
             /** ERROR: (つ◉益◉)つ
              * Compruebo si la key actual no coincide con la key entrante para pasar a la siguiente  */
             while (temp.next != null && !temp.key.equals(key)) {
@@ -48,9 +48,9 @@ public class HashTable1 {
             } else {
                 temp.next = hashEntry;
                 hashEntry.prev = temp;
+
                 /** ERROR: ¯\_(ツ)_/¯
                  * Sigo controloando el size de forma manual, ya que se estan creando nuevos objetos*/
-
                 size += 1;
             }
         }
@@ -61,62 +61,61 @@ public class HashTable1 {
      * Returns 'null' if the element is not found.
      */
     public String get(String key) {
-        /** ERROR: (/ ◉益◉)/
-         * El get no controla las colisiones inexistentes, devuelve values en claves que tienen el mismo hash */
-        int hash = getHash(key);
-        if (entries[hash] != null) {
-            HashEntry temp = entries[hash];
-            HashEntry tempNull=new HashEntry(null,null);
+        //int hash = getHash(key);
+        return getHashEntry(key, entries[getHash(key)]).value;
+        // if (temp != null) {
+        /**REFACCIÓ: Extraccio de metode, e cambiado todos los while que encontraban el hasentry a un metodo */
+        //   temp= getHashEntry(key, temp);
+        //   return getHashEntry(key, temp).value;
+//        }
+//        return null;
+    }
 
-            while (!temp.key.equals(key)&& temp.next !=null)
+    private HashEntry getHashEntry(String key, HashEntry temp) {
+        HashEntry tempNull=new HashEntry(null,null);
+            while (!temp.key.equals(key) && temp.next !=null) {
                 temp = temp.next;
-            if (!temp.key.equals(key)) temp= tempNull;
 
-            return temp.value;
-        }
+            }
+            if (!temp.key.equals(key)) return tempNull;
 
-        return null;
+        return temp;
     }
 
     public void drop(String key) {
-        int hash = getHash(key);
-        if (entries[hash] != null) {
+          int hash = getHash(key);
 
-            HashTable1.HashEntry temp = entries[hash];
-            /** ERROR: ( -3•)
-             * Compruebo que la key no coincide y que */
-            while (!temp.key.equals(key) && temp.next==null)
+        HashEntry temp = entries[hash];
+        // if (temp != null) {
+        /**REFACCIÓ: Extraccio de metode, e cambiado todos los while que encontraban el hasentry a un metodo */
+        temp = getHashEntry(key, temp);
+        /** ERROR: ( -◡•)>⌐■-■
+         * Compruebo si el anterior y el posterior a temp actual son nulos, en caso afirmativo procedo ha borrar sin complicación*/
+        if (temp.prev == null && temp.next == null) {
+            entries[hash]=null;//esborrar element únic (no col·lissió)
+
+            /** ERROR: ¯\_(ツ)_/¯
+             * Sigo controloando el size de forma manual, ahora esta eliminando un objeto hasentry, como este no tiene colisiones, no nos preocupa ya que sabes que unicamente es uno, lo que nos lleva a la conclusion de que con restarle 1 al size basta */
+            size -= 1;
+        } else {
+            /** ERROR: (∩╹□╹∩)*
+             * Compruebo que el posterior al actual no este vacio, de esta manera, voy copiando los valores siguientes en el acutal, el ultimo se convierte en null(se explica abajo el porque) */
+            while (temp.next != null) {
+                temp.key = temp.next.key;
+                temp.value = temp.next.value;
                 temp = temp.next;
-            if (temp.next==null) {
-
             }
-            /** ERROR: ( -◡•)>⌐■-■
-             * Compruebo si el anterior y el posterior a temp actual son nulos, en caso afirmativo procedo ha borrar sin complicación*/
-            if (temp.prev == null && temp.next == null) {
-                entries[hash] = null;//esborrar element únic (no col·lissió)
-
-                /** ERROR: ¯\_(ツ)_/¯
-                 * Sigo controloando el size de forma manual, ahora esta eliminando un objeto hasentry, como este no tiene colisiones, no nos preocupa ya que sabes que unicamente es uno, lo que nos lleva a la conclusion de que con restarle 1 al size basta */
-                size -= 1;
-                 } else {
-                 /** ERROR: (∩╹□╹∩)*
-                 * Compruebo que el posterior al actual no este vacio, de esta manera, voy copiando los valores siguientes en el acutal */
-                while (temp.next != null) {
-                    temp.key = temp.next.key;
-                    temp.value = temp.next.value;
-                    temp = temp.next;
-                }
-                /** No se si es ERROR:
-                 * pero dado a mi while este if siempre sera falso, por lo que he tomado la decision de comentarlo*/
+            /** No se si es ERROR:
+             * pero dado a mi while este if siempre sera falso, por lo que he tomado la decision de comentarlo(es broma) Enrrealidad el motivo es que jamas quedara un "hueco" en medo de las colisiones, por lo que no tendremos que redirigir los .next y .prev para saltarnos el hueco :D*/
 //                if (temp.next != null)
 //                    temp.next.prev = temp.prev;   //esborrem temp, per tant actualitzem l'anterior al següent
-                temp.prev.next = temp.next;//esborrem temp, per tant actualitzem el següent de l'anterior
-                /** ERROR: ¯\_(ツ)_/¯
-                 *  Aqui tambien restaremos 1, ya que justo la linea que tenemos encima convierte en nulo el ultimo objeto de la colision, esto tiene un porque, ya que hemos desplazado todos los datos un hacia atras, esto no borra el ultimo objeto, pero con la linea mencionada solucionamos el problema y reducimos el tamaño en 1, por lo tanto basta con restar 1   */
-                size -= 1;
-            }
-
+            temp.prev.next = temp.next;//esborrem temp, per tant actualitzem el següent de l'anterior
+            /** ERROR: ¯\_(ツ)_/¯
+             *  Aqui tambien restaremos 1, ya que justo la linea que tenemos encima convierte en nulo el ultimo objeto de la colision, esto tiene un porque, ya que hemos desplazado todos los datos una posicion  hacia atras, esto no borra el ultimo objeto, pero con la linea mencionada solucionamos el problema y reducimos el tamaño en 1, por lo tanto basta con restar 1   */
+            size -= 1;
         }
+
+        // }
     }
 
     private int getHash(String key) {
@@ -125,27 +124,6 @@ public class HashTable1 {
         return key.hashCode() % INITIAL_SIZE;
     }
 
-    private class HashEntry {
-        String key;
-        String value;
-
-        // Linked list of same hash entries.
-        HashEntry next;
-        HashEntry prev;
-
-        public HashEntry(String key, String value) {
-            this.key = key;
-            this.value = value;
-            this.next = null;
-            this.prev = null;
-        }
-
-        @Override
-        public String toString() {
-            return "[" + key + ", " + value + "]";
-        }
-
-    }
 
     @Override
     public String toString() {
@@ -234,25 +212,5 @@ public class HashTable1 {
         return foundKeys;
     }
 
-    public static void main(String[] args) {
-        HashTable1 hashTable = new HashTable1();
 
-        // Put some key values.
-        for (int i = 0; i < 30; i++) {
-            final String key = String.valueOf(i);
-            hashTable.put(key, key);
-        }
-
-        // Print the HashTable structure
-        log("****   HashTable  ***");
-        log(hashTable.toString());
-        log("\nValue for key(20) : " + hashTable.get("20"));
-    }
-
-    private static void log(String msg) {
-        System.out.println(msg);
-    }
 }
-
-
-
